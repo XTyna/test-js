@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<style>
+body {
+    font-size: 14px;
+    background-color: rgb(242, 251, 255);
+}
+
+.sort-button {
+    background-color: #71e0f3;
+    padding: 8px 15px;
+    border-radius: 18px;
+    cursor: pointer;
+    outline: none;
+}
+
+.photo {
+    width: 100%;
+}
+
+#demo {
+    line-height: 0;
+    -webkit-column-count: 4;
+    -webkit-column-gap: 0px;
+    -moz-column-count: 4;
+    -moz-column-gap: 0px;
+    column-count: 4;
+    column-gap: 0px;
+    padding: 0 4px;
+    max-width: 850px;
+    margin: 0 auto;
+}
+
+.parameters {
+    margin: 0 auto;
+    text-align: center;
+    padding: 5px;
+}
+
+.parameters div {
+    line-height: 20px;
+}
+
+.wrapper-lot {
+    margin: 0 auto;
+    -webkit-column-break-inside: avoid;
+    /* Chrome, Safari, Opera */
+    page-break-inside: avoid;
+    /* Firefox */
+    break-inside: avoid;
+    padding: 4px;
+}
+
+.lot {
+    margin: 0 auto;
+    position: relative;
+    width: 200px;
+    margin: 5px;
+    transition: all .3s ease;
+    box-shadow: 0 0 5px 1px #bcbdbd69;
+    background-color: white;
+}
+
+div.lot:hover {
+    box-shadow: 0 0 10px 2px #bcbdbd85;
+    z-index: 40;
+}
+
+.delete {
+    background: url('./img/cross.svg') no-repeat center;
+    z-index: 5;
+    position: absolute;
+    top: 6px;
+    right: 3px;
+    cursor: pointer;
+    color: white;
+    text-shadow: 2px 2px;
+    width: 10px;
+    height: 10px;
+    border-radius: 15%;
+}
+
+.full-name {
+    background: url(./img/pencil.svg) no-repeat right 4px;
+    padding-right: 15px;
+    background-size: 12px;
+    display: inline-block;
+    cursor: pointer;
+    transition: color .3s;
+}
+
+.full-name:hover {
+    color: #8a8686;
+}
+
+
+#modal-wrapper {
+    display: none;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background-color: rgba(0, 0, 0, .5);
+    align-items: center;
+    justify-content: center;
+}
+
+#modal-wrapper.active {
+    display: flex;
+}
+
+
+.modal {
+    background-color: #fff;
+    padding: 30px 10px;
+}
+
+
+/*.sort-button*/
+</style>
+
+<body>
+    <button class="sort-by-name sort-button">Sort by name</button>
+    <button class="sort-by-date sort-button">Sort by date</button>
+    <button class="sort-by-price sort-button">Sort by price</button>
+    <div id="demo">
+    </div>
+    <div id="modal-wrapper">
+        <div class="modal">
+            <input type="text" />
+            <button class="close">Close</button>
+            <button class="apply">Ok</button>
+        </div>
+    </div>
+    <script>
+    document.querySelector('#modal-wrapper .close').onclick = function() {
+        document.querySelector('#modal-wrapper').setAttribute('class', '');
+    }
+
+    document.querySelector('#modal-wrapper .apply').onclick = function() {
+        const newDescription = document.querySelector('#modal-wrapper input').value;
+        editItem.camera.full_name = newDescription;
+        renderItems();
+        editItem = {};
+        document.querySelector('#modal-wrapper input').value = '';
+        document.querySelector('#modal-wrapper').setAttribute('class', '');
+    }
+
+    let items = [];
+    let editItem = {};
+
+    function renderItems() {
+        document.getElementById('demo').innerHTML = '';
+
+        items.forEach(function(u, index) {
+            var wraperItem = document.createElement('div');
+            wraperItem.setAttribute("class", "wrapper-lot")
+            document.getElementById('demo').appendChild(wraperItem);
+
+            wraperItem.innerHTML = `<div class="lot">
+                                    <div class="delete"></div>
+                                    <img class="photo" src="${u.img_src}" />
+                                    <div class="parameters">
+                                        <div>${u.camera.name}</div>
+                                        <div class="full-name">${u.camera.full_name}</div>
+                                        <div>${u.earth_date}</div>
+                                        <div>$${u.randomPrice}</div>
+                                    </div>
+                                    </div>`;
+            wraperItem.querySelector('.delete').onclick = function() { deleteClicked(index) };
+            wraperItem.querySelector('.full-name').onclick = function() {
+                document.querySelector('#modal-wrapper').setAttribute('class', 'active');
+                editItem = u;
+                document.querySelector('#modal-wrapper input').value = editItem.camera.full_name;
+            }
+        })
+    }
+
+    function changeFullName(index, newFullName) {
+        items[index].camera.full_name = newFullName;
+    }
+
+    function deleteClicked(index) {
+        items.splice(index, 1)
+        renderItems();
+    }
+
+    function sortByPrice() {
+        items.sort(function(prev, next) {
+            if (prev.randomPrice > next.randomPrice) {
+                return 1;
+            }
+            return -1;
+        });
+        renderItems();
+    }
+
+
+    function sortByName() {
+        items.sort(function(prev, next) {
+            return prev.camera.name.localeCompare(next.camera.name);
+        });
+        renderItems();
+    }
+
+    function sortByDate() {
+        items.sort(function(prev, next) {
+            if (new Date(prev.earth_date) > new Date(next.earth_date)) {
+                return 1;
+            }
+            return -1;
+        });
+        renderItems();
+    };
+
+
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+            const photos = JSON.parse(this.response).photos;
+            photos.forEach(function(item) {
+                item.randomPrice = Math.floor(Math.random() * 1481 + 20);
+            });
+            // Uncomment when date sorting test is needed. Server date is the same for all the items.
+            // photos[5].earth_date = '2017-06-05';
+            // photos[10].earth_date = '2016-06-05';
+
+            items = photos;
+            renderItems();
+        }
+    };
+
+
+    xhttp.open("GET", "https://api.nasa.gov/mars-photos/api/v1/rovers/curiosity/photos?sol=1000&page=6&api_key=NNKOjkoul8n1CH18TWA9gwngW1s1SmjESPjNoUFo", true);
+    xhttp.send();
+
+    document.querySelector('.sort-by-price').onclick = sortByPrice;
+    document.querySelector('.sort-by-name').onclick = sortByName;
+    document.querySelector('.sort-by-date').onclick = sortByDate;
+    </script>
+</body>
+
+</html>
